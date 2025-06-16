@@ -35,7 +35,7 @@ services:
       - ${LOCAL_WORKSPACE:-./workspace}:/workspace
       
       # Optional: SSH keys for private repositories
-      - ${SSH_KEY_PATH:-./ssh}:/home/runner/.ssh:ro
+      #- ${SSH_KEY_PATH:-./ssh}:/home/runner/.ssh:ro
     
     networks:
       - runner-network
@@ -63,7 +63,3 @@ services:
 networks:
   runner-network:
     driver: bridge
-
-volumes:
-  runner-data:
-    driver: local
