@@ -1,0 +1,69 @@
+---
+
+services:
+  github-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        RUNNER_VERSION: ${RUNNER_VERSION:-2.325.0}
+    container_name: github-runner
+    environment:
+      # GitHub configuration
+      - GITHUB_OWNER=${GITHUB_OWNER}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      
+      # Runner configuration
+      - RUNNER_NAME=${RUNNER_NAME:-local-docker-runner}
+      - RUNNER_LABELS=${RUNNER_LABELS:-local,docker,self-hosted}
+      - RUNNER_GROUP=${RUNNER_GROUP:-default}
+      - RUNNER_SCOPE=${RUNNER_SCOPE:-repo}  # 'repo' or 'org'
+      
+      # Optional: Additional environment variables for workflows
+      - NODE_ENV=${NODE_ENV:-development}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    
+    volumes:
+      # Docker socket for workflows that need Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+      # Persistent storage for runner data
+      - ./runner-data:/home/runner/_work
+      
+      # Optional: Mount local code for development
+      - ${LOCAL_WORKSPACE:-./workspace}:/workspace
+      
+      # Optional: SSH keys for private repositories
+      - ${SSH_KEY_PATH:-./ssh}:/home/runner/.ssh:ro
+    
+    networks:
+      - runner-network
+    
+    restart: unless-stopped
+    
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-300M}
+          cpus: ${CPU_LIMIT:-0.3}
+        reservations:
+          memory: ${MEMORY_RESERVATION:-128M}
+          cpus: ${CPU_RESERVATION:-0.25}
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "Runner.Listener"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  runner-network:
+    driver: bridge
+
+volumes:
+  runner-data:
+    driver: local
