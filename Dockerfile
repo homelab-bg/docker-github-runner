@@ -46,6 +46,11 @@ RUN curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz -L \
 # Install runner dependencies
 RUN sudo ./bin/installdependencies.sh
 
+# Fix permissions for work directory
+RUN mkdir -p /home/runner/_work /home/runner/_work/_tool && \
+    chown -R runner:runner /home/runner/_work && \
+    chmod -R 755 /home/runner/_work
+
 # Copy entrypoint script
 COPY --chown=runner:runner scripts/entrypoint.sh /home/runner/entrypoint.sh
 COPY --chown=runner:runner scripts/remove-runner.sh /home/runner/remove-runner.sh
