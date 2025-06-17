@@ -9,7 +9,9 @@ cleanup() {
 }
 
 # Set up signal handlers
-trap cleanup SIGTERM SIGINT
+#trap cleanup SIGTERM SIGINT
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 # Validate required environment variables
 if [[ -z "$GITHUB_TOKEN" ]]; then
