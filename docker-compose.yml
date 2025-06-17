@@ -6,8 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        RUNNER_VERSION: ${RUNNER_VERSION:-2.325.0}
-    container_name: github-runner
+        RUNNER_VERSION: ${RUNNER_VERSION:-2.311.0}
+    container_name: github-actions-runner
     environment:
       # GitHub configuration
       - GITHUB_OWNER=${GITHUB_OWNER}
@@ -18,7 +18,7 @@ services:
       - RUNNER_NAME=${RUNNER_NAME:-local-docker-runner}
       - RUNNER_LABELS=${RUNNER_LABELS:-local,docker,self-hosted}
       - RUNNER_GROUP=${RUNNER_GROUP:-default}
-      - RUNNER_SCOPE=${RUNNER_SCOPE:-repo}  # 'repo' or 'org'
+      - RUNNER_SCOPE=${RUNNER_SCOPE:-repo}
       
       # Optional: Additional environment variables for workflows
       - NODE_ENV=${NODE_ENV:-development}
@@ -35,7 +35,10 @@ services:
       - ${LOCAL_WORKSPACE:-./workspace}:/workspace
       
       # Optional: SSH keys for private repositories
-      #- ${SSH_KEY_PATH:-./ssh}:/home/runner/.ssh:ro
+      - ${SSH_KEY_PATH:-./ssh}:/home/runner/.ssh:ro
+    
+    # Run as runner user (not root) - more secure
+    user: "runner"
     
     networks:
       - runner-network
@@ -46,11 +49,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${MEMORY_LIMIT:-300M}
-          cpus: ${CPU_LIMIT:-0.3}
+          memory: ${MEMORY_LIMIT:-2G}
+          cpus: ${CPU_LIMIT:-2.0}
         reservations:
-          memory: ${MEMORY_RESERVATION:-128M}
-          cpus: ${CPU_RESERVATION:-0.25}
+          memory: ${MEMORY_RESERVATION:-1G}
+          cpus: ${CPU_RESERVATION:-1.0}
     
     # Health check
     healthcheck:
@@ -63,3 +66,7 @@ services:
 networks:
   runner-network:
     driver: bridge
+
+volumes:
+  runner-data:
+    driver: local
