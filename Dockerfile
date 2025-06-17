@@ -21,16 +21,17 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a user for the runner
-RUN useradd -m -s /bin/bash runner && \
-    usermod -aG sudo runner && \
-    echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Install Docker CLI (for workflows that need Docker)
+# Install Docker CLI
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
     sh get-docker.sh && \
-    usermod -aG docker runner && \
     rm get-docker.sh
+
+# Create docker group with a default GID (will be adjusted at runtime)
+RUN groupadd -g 999 docker || true
+
+# Create runner user and add to docker and sudo groups
+RUN useradd -m -s /bin/bash -G docker,sudo runner && \
+    echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set up GitHub Actions runner
 WORKDIR /home/runner
@@ -48,7 +49,7 @@ RUN sudo ./bin/installdependencies.sh
 
 # Fix permissions for work directory
 RUN mkdir -p /home/runner/_work /home/runner/_work/_tool && \
-    chown -R runner:runner /home/runner/_work && \
+    sudo chown -R runner:runner /home/runner/_work && \
     chmod -R 755 /home/runner/_work
 
 # Copy entrypoint script
@@ -57,3 +58,4 @@ COPY --chown=runner:runner scripts/remove-runner.sh /home/runner/remove-runner.s
 RUN chmod +x /home/runner/entrypoint.sh /home/runner/remove-runner.sh
 
 ENTRYPOINT ["/home/runner/entrypoint.sh"]
+CMD ["./run.sh"]
